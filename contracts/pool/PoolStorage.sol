@@ -83,7 +83,7 @@ abstract contract PoolStorage {
     mapping(address indexToken => uint256) public maxGlobalShortSizes;
     /// @notice total LONG size of each market cannot large than this ratio
     mapping(address indexToken => uint256) public maxGlobalLongSizeRatios;
-    /// @notice total SHORT size on all tranches
+    /// @notice total SHORT size of all token on all tranches
     uint256 public globalShortSize;
     /// @notice increase each time position newly opnen
     mapping(bytes32 positionKey => uint256) public positionRevisions;

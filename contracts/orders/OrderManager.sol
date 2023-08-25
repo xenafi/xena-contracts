@@ -214,8 +214,12 @@ contract OrderManager is
         }
 
         DataTypes.UpdatePositionRequest memory request = updatePositionRequests[_orderId];
-        uint256 indexPrice = _getMarkPrice(order.indexToken, request.side, request.updateType);
-        bool isValid = order.triggerAboveThreshold ? indexPrice >= order.price : indexPrice <= order.price;
+        (uint256 indexPrice, uint256 lastPriceUpdate) =
+            _getMarkPrice(order.indexToken, request.side, request.updateType);
+
+        bool isValid = lastPriceUpdate > order.submissionTimestamp
+            && (order.triggerAboveThreshold ? indexPrice >= order.price : indexPrice <= order.price);
+
         if (!isValid) {
             return;
         }
@@ -329,10 +333,11 @@ contract OrderManager is
     function _getMarkPrice(address _indexToken, DataTypes.Side _side, DataTypes.UpdatePositionType _updateType)
         internal
         view
-        returns (uint256)
+        returns (uint256 price, uint256 lastUpdate)
     {
         bool max = (_updateType == DataTypes.UpdatePositionType.INCREASE) == (_side == DataTypes.Side.LONG);
-        return oracle.getPrice(_indexToken, max);
+        price = oracle.getPrice(_indexToken, max);
+        lastUpdate = oracle.lastAnswerTimestamp(_indexToken);
     }
 
     function _createDecreasePositionOrder(

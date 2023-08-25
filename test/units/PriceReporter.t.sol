@@ -30,16 +30,17 @@ contract PriceReporterTest is Test {
     function test_keeper_can_report() external {
         address[] memory tokens = new address[](0);
         uint256[] memory prices = new uint[](0);
+        uint256[] memory timeStamps = new uint[](0);
         uint256[] memory leverageOrders = new uint[](0);
         uint256[] memory swapOrders = new uint[](0);
 
         vm.mockCall(orderManager, abi.encodeWithSelector(IOrderManager.executeSwapOrder.selector), new bytes(0));
         vm.mockCall(oracle, abi.encodeWithSelector(IPriceFeed.postPrices.selector), new bytes(0));
         vm.prank(keeper);
-        reporter.postPriceAndExecuteOrders(tokens, prices, leverageOrders, swapOrders);
+        reporter.postPriceAndExecuteOrders(tokens, prices, timeStamps, leverageOrders, swapOrders);
 
         vm.prank(eve);
-        vm.expectRevert(bytes("PriceReporter:unauthorized"));
-        reporter.postPriceAndExecuteOrders(tokens, prices, leverageOrders, swapOrders);
+        vm.expectRevert(PriceReporter.Unauthorized.selector);
+        reporter.postPriceAndExecuteOrders(tokens, prices, timeStamps, leverageOrders, swapOrders);
     }
 }

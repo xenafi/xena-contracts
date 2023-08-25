@@ -6,7 +6,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IOrderManager} from "../interfaces/IOrderManager.sol";
 
 interface IPriceFeed {
-    function postPrices(address[] calldata tokens, uint256[] calldata prices) external;
+    function postPrices(address[] calldata tokens, uint256[] calldata prices, uint256[] calldata timestamps) external;
 }
 
 /**
@@ -20,8 +20,9 @@ contract PriceReporter is Ownable {
     address[] public reporters;
 
     constructor(address _oracle, address _orderManager) {
-        require(_oracle != address(0), "PriceReporter:invalidOracle");
-        require(_orderManager != address(0), "PriceReporter:invalidPositionManager");
+        if (_oracle == address(0)) revert InvalidAddress();
+        if (_orderManager == address(0)) revert InvalidAddress();
+
         oracle = IPriceFeed(_oracle);
         orderManager = IOrderManager(_orderManager);
     }
@@ -29,11 +30,13 @@ contract PriceReporter is Ownable {
     function postPriceAndExecuteOrders(
         address[] calldata tokens,
         uint256[] calldata prices,
+        uint256[] calldata priceTimestamps,
         uint256[] calldata leverageOrders,
         uint256[] calldata swapOrders
     ) external {
-        require(isReporter[msg.sender], "PriceReporter:unauthorized");
-        oracle.postPrices(tokens, prices);
+        if (!isReporter[msg.sender]) revert Unauthorized();
+
+        oracle.postPrices(tokens, prices, priceTimestamps);
 
         for (uint256 i = 0; i < leverageOrders.length;) {
             try orderManager.executeLeverageOrder(leverageOrders[i], payable(msg.sender)) {} catch {}
@@ -41,6 +44,7 @@ contract PriceReporter is Ownable {
                 ++i;
             }
         }
+
         for (uint256 i = 0; i < swapOrders.length; i++) {
             try orderManager.executeSwapOrder(swapOrders[i], payable(msg.sender)) {} catch {}
             unchecked {
@@ -50,14 +54,16 @@ contract PriceReporter is Ownable {
     }
 
     function addReporter(address reporter) external onlyOwner {
-        require(reporter != address(0), "PriceReporter:invalidAddress");
-        require(!isReporter[reporter], "PriceReporter:reporterAlreadyAdded");
+        if (reporter == address(0)) revert InvalidAddress();
+        if (isReporter[reporter]) revert ReporterAlreadyAdded();
+
         isReporter[reporter] = true;
         reporters.push(reporter);
     }
 
     function removeReporter(address reporter) external onlyOwner {
-        require(isReporter[reporter], "PriceReporter:reporterNotExists");
+        if (!isReporter[reporter]) revert ReporterNotExists();
+
         isReporter[reporter] = false;
         for (uint256 i = 0; i < reporters.length; i++) {
             if (reporters[i] == reporter) {
@@ -67,4 +73,9 @@ contract PriceReporter is Ownable {
         }
         reporters.pop();
     }
+
+    error Unauthorized();
+    error InvalidAddress();
+    error ReporterAlreadyAdded();
+    error ReporterNotExists();
 }

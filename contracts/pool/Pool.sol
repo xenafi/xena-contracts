@@ -163,6 +163,19 @@ contract Pool is
         }
     }
 
+    function liquidatePositionAllowed(
+        address _account,
+        address _indexToken,
+        address _collateralToken,
+        DataTypes.Side _side
+    ) external view returns (bool) {
+        bytes32 key = PositionLogic.getPositionKey(_account, _indexToken, _collateralToken, _side);
+        DataTypes.Position memory position = positions[key];
+        uint256 markPrice = oracle.getReferencePrice(_indexToken);
+        uint256 borrowIndex = borrowIndices[_collateralToken];
+        return _liquidatePositionAllowed(position, _side, markPrice, borrowIndex);
+    }
+
     // ============= Mutative functions =============
 
     function addLiquidity(address _tranche, address _token, uint256 _amountIn, uint256 _minLpAmount, address _to)
@@ -247,7 +260,8 @@ contract Pool is
         _doTransferOut(_tokenOut, _to, amountOutAfterFee);
         emit Swap(msg.sender, _tokenIn, _tokenOut, amountIn, amountOutAfterFee, swapFee, priceIn, priceOut);
         if (address(poolHook) != address(0)) {
-            poolHook.postSwap(_to, _tokenIn, _tokenOut, abi.encode(amountIn, amountOutAfterFee, swapFee, extradata));
+            bytes memory data = abi.encode(amountIn, amountOutAfterFee, swapFee * priceIn, extradata);
+            poolHook.postSwap(_to, _tokenIn, _tokenOut, data);
         }
     }
 
@@ -417,7 +431,7 @@ contract Pool is
 
         bytes32 key = PositionLogic.getPositionKey(_account, _indexToken, _collateralToken, _side);
         DataTypes.Position memory position = positions[key];
-        uint256 markPrice = _getIndexPrice(_indexToken, _side, false);
+        uint256 markPrice = oracle.getReferencePrice(_indexToken);
         if (!_liquidatePositionAllowed(position, _side, markPrice, borrowIndex)) {
             revert PositionNotLiquidated();
         }
@@ -561,10 +575,10 @@ contract Pool is
         emit MaxLiquiditySet(_asset, _value);
     }
 
-    function setLiquidityCalculator(address _liquidityCalculator) external onlyOwner {
-        _requireAddress(_liquidityCalculator);
-        liquidityCalculator = ILiquidityCalculator(_liquidityCalculator);
-        emit LiquidityCalculatorSet(_liquidityCalculator);
+    function setLiquidityCalculator(address _liquidityManager) external onlyOwner {
+        _requireAddress(_liquidityManager);
+        liquidityCalculator = ILiquidityCalculator(_liquidityManager);
+        emit LiquidityCalculatorSet(_liquidityManager);
     }
 
     function setPositionFee(uint256 _positionFee, uint256 _liquidationFee) external onlyOwner {
@@ -1223,7 +1237,8 @@ contract Pool is
 
     function _validateGlobalShortSize(address _indexToken) internal view {
         uint256 maxGlobalShortSize = maxGlobalShortSizes[_indexToken];
-        if (maxGlobalShortSize != 0 && maxGlobalShortSize < globalShortSize) {
+        uint256 totalShortSize = _getPoolAsset(_indexToken).totalShortSize;
+        if (maxGlobalShortSize != 0 && maxGlobalShortSize < totalShortSize) {
             revert MaxGlobalShortSizeExceeded();
         }
     }

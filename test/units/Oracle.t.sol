@@ -83,13 +83,15 @@ contract OracleTest is Test {
         oracle.getPrice(token, true);
     }
 
-    function postPrices(address _token, uint256 _price) internal {
+    function postPrices(address _token, uint256 _price, uint256 _timeStamp) internal {
         address[] memory tokens = new address[](1);
         tokens[0] = _token;
         uint256[] memory prices = new uint[](1);
         prices[0] = _price;
+        uint256[] memory timeStamps = new uint[](1);
+        timeStamps[0] = _timeStamp;
         vm.prank(reporter);
-        oracle.postPrices(tokens, prices);
+        oracle.postPrices(tokens, prices, timeStamps);
     }
 
     function test_reporter_not_report() external {
@@ -97,7 +99,7 @@ contract OracleTest is Test {
         uint256 chainlinkLastTime = _now - 1 minutes;
 
         vm.warp(_now - 6 minutes);
-        postPrices(token, 900_000);
+        postPrices(token, 900_000, _now - 6 minutes);
 
         vm.warp(_now);
         vm.mockCall(
@@ -138,7 +140,7 @@ contract OracleTest is Test {
 
         {
             // keeper price too low
-            postPrices(token, 99940000);
+            postPrices(token, 99940000, _now);
             uint256 maxPrice = oracle.getPrice(token, true);
             uint256 minPrice = oracle.getPrice(token, false);
 
@@ -148,7 +150,8 @@ contract OracleTest is Test {
         }
         {
             // keeper price too high
-            postPrices(token, 100050001);
+            vm.warp(_now + 1);
+            postPrices(token, 100050001, _now + 1);
             uint256 maxPrice = oracle.getPrice(token, true);
             uint256 minPrice = oracle.getPrice(token, false);
 
@@ -158,7 +161,8 @@ contract OracleTest is Test {
         }
         {
             // keeper price too damn high
-            postPrices(token, 100150001);
+            vm.warp(_now + 2);
+            postPrices(token, 100150001, _now + 2);
             uint256 maxPrice = oracle.getPrice(token, true);
             uint256 minPrice = oracle.getPrice(token, false);
 

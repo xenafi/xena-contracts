@@ -11,6 +11,14 @@ contract MockOracle {
         return _getPrice[token];
     }
 
+    function getReferencePrice(address token) external view returns (uint256) {
+        return _getPrice[token];
+    }
+
+    function lastAnswerTimestamp(address token) external view returns (uint256) {
+        return block.timestamp;
+    }
+
     function postPrices(address[] calldata tokens, uint256[] calldata prices) external {}
 
     function getMultiplePrices(address[] calldata tokens, bool /* max */ ) external view returns (uint256[] memory) {
