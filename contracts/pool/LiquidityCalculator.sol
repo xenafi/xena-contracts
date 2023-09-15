@@ -252,11 +252,6 @@ contract LiquidityCalculator is Ownable, ILiquidityCalculator {
         return oracle.getPrice(_token, _max);
     }
 
-    function _calcDaoFee(uint256 _feeAmount) internal view returns (uint256 _daoFee, uint256 lpFee) {
-        _daoFee = MathUtils.frac(_feeAmount, pool.daoFee(), Constants.PRECISION);
-        lpFee = _feeAmount - _daoFee;
-    }
-
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a > b ? a : b;
     }

@@ -75,7 +75,7 @@ library DataTypes {
         uint256 size;
         /// @dev collateral value in dollar
         uint256 collateralValue;
-        /// @dev contract size in indexToken
+        /// @dev contract size in collateralToken
         uint256 reserveAmount;
         /// @dev average entry price
         uint256 entryPrice;

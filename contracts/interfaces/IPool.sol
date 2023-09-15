@@ -40,6 +40,8 @@ interface IPool {
         address _receiver
     ) external;
 
+    function liquidatePosition(address _account, address _indexToken, address _collateralToken, DataTypes.Side _side) external;
+
     function swap(address _tokenIn, address _tokenOut, uint256 _minOut, address _to, bytes calldata extradata)
         external;
 

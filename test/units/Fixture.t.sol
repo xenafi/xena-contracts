@@ -120,7 +120,7 @@ abstract contract PoolTestFixture is Fixture {
         config[2] = IPool.TokenWeight({token: address(usdc), weight: 2000});
 
         pool.setTargetWeight(config);
-        router = new LiquidityRouter(address(pool));
+        router = new LiquidityRouter(address(pool), address(weth));
         pool.unpause();
         vm.stopPrank();
     }

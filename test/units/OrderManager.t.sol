@@ -23,6 +23,7 @@ contract OrderManagerTest is PoolTestFixture {
 
     address private constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address private executor = address(bytes20("executor"));
+    ETHUnwrapper private unwrapper;
 
     function setUp() external {
         build();
@@ -40,7 +41,7 @@ contract OrderManagerTest is PoolTestFixture {
         pool.setOrderManager(address(orders));
 
         address ethUnwapper = orders.ETH_UNWRAPPER();
-        ETHUnwrapper unwrapper = new ETHUnwrapper(address(weth));
+        unwrapper = new ETHUnwrapper(address(weth));
         vm.etch(ethUnwapper, address(unwrapper).code);
 
         liquidityCalculator.setFees(0, 0, 0, 0, 0);
@@ -52,7 +53,7 @@ contract OrderManagerTest is PoolTestFixture {
 
     function init() internal {
         vm.startPrank(owner);
-        orders.initialize(address(weth), address(oracle), address(pool), 1, 1);
+        orders.initialize(address(weth), address(oracle), address(pool), 1, 1, address(unwrapper));
         orders.setMinExecutionFee(1e7, 1e7);
         orders.setExecutor(executor);
         orders.setExecutionDelayTime(1);
@@ -78,18 +79,18 @@ contract OrderManagerTest is PoolTestFixture {
     function test_initialize() external {
         vm.startPrank(owner);
         vm.expectRevert(IOrderManager.ZeroAddress.selector);
-        orders.initialize(address(0), address(oracle), address(pool), 0.01 ether, 0.01 ether);
+        orders.initialize(address(0), address(oracle), address(pool), 0.01 ether, 0.01 ether, address(unwrapper));
 
         vm.expectRevert(IOrderManager.ZeroAddress.selector);
-        orders.initialize(address(weth), address(0), address(pool), 0.01 ether, 0.01 ether);
+        orders.initialize(address(weth), address(0), address(pool), 0.01 ether, 0.01 ether, address(unwrapper));
 
         vm.expectRevert(IOrderManager.InvalidExecutionFee.selector);
-        orders.initialize(address(weth), address(oracle), address(pool), 1 ether, 1 ether);
+        orders.initialize(address(weth), address(oracle), address(pool), 1 ether, 1 ether, address(unwrapper));
 
         vm.expectRevert(IOrderManager.ZeroAddress.selector);
-        orders.initialize(address(weth), address(oracle), address(0), 0.01 ether, 0.01 ether);
+        orders.initialize(address(weth), address(oracle), address(0), 0.01 ether, 0.01 ether, address(unwrapper));
 
-        orders.initialize(address(weth), address(oracle), address(pool), 0.01 ether, 0.01 ether);
+        orders.initialize(address(weth), address(oracle), address(pool), 0.01 ether, 0.01 ether, address(unwrapper));
         vm.stopPrank();
     }
 

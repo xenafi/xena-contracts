@@ -125,7 +125,7 @@ Note that we already have
 So
 
 $$
-ManagedValue = (poolAmount - reserve) \times indexPrice - guaranteedValue
+ManagedValue = (poolAmount - reserve) \times indexPrice + guaranteedValue
 $$
 
 Guaranteed value is calculated in cumulative style each time long position updated.

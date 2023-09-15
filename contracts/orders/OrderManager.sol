@@ -33,7 +33,7 @@ contract OrderManager is
     uint256 constant MARKET_ORDER_TIMEOUT = 5 minutes;
     uint256 constant MAX_MIN_EXECUTION_FEE = 0.01 ether;
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address public constant ETH_UNWRAPPER = 0x1730CdEe8f86272eBae2eFD83f94dd9D5D855EeD;
+    address public ETH_UNWRAPPER;
 
     constructor() {
         _disableInitializers();
@@ -49,7 +49,8 @@ contract OrderManager is
         address _oracle,
         address _pool,
         uint256 _minLeverageExecutionFee,
-        uint256 _minSwapExecutionFee
+        uint256 _minSwapExecutionFee,
+        address _eth_unwrapper
     ) external initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -57,6 +58,7 @@ contract OrderManager is
         if (_oracle == address(0)) revert ZeroAddress();
         if (_weth == address(0)) revert ZeroAddress();
         if (_pool == address(0)) revert ZeroAddress();
+        if (_eth_unwrapper == address(0)) revert ZeroAddress();
 
         _setMinExecutionFee(_minLeverageExecutionFee, _minSwapExecutionFee);
         weth = IWETH(_weth);
@@ -64,6 +66,9 @@ contract OrderManager is
         pool = IPool(_pool);
         nextLeverageOrderId = 1;
         nextSwapOrderId = 1;
+        ETH_UNWRAPPER = _eth_unwrapper;
+
+        emit OracleChanged(_oracle);
     }
 
     // ============= VIEW FUNCTIONS ==============
@@ -224,8 +229,9 @@ contract OrderManager is
             return;
         }
 
-        _executeLeveragePositionRequest(order, request);
         leverageOrders[_orderId].status = DataTypes.OrderStatus.FILLED;
+
+        _executeLeveragePositionRequest(order, request);
         SafeTransferLib.safeTransferETH(_feeTo, order.executionFee);
         emit LeverageOrderExecuted(_orderId, order, request, indexPrice);
     }
@@ -299,7 +305,7 @@ contract OrderManager is
             if (!noSwap) {
                 address fromToken = _order.payToken == ETH ? address(weth) : _order.payToken;
                 _request.collateral =
-                    _poolSwap(fromToken, _order.collateralToken, _request.collateral, 0, address(this), _order.owner);
+                    _poolSwap(fromToken, _order.collateralToken, _request.collateral, _order.owner);
             }
 
             IERC20(_order.collateralToken).safeTransfer(address(pool), _request.collateral);
@@ -400,7 +406,6 @@ contract OrderManager is
     /// address payToken address the token user used to pay
     /// uint256 purchaseAmount amount user willing to pay
     /// uint256 sizeChanged size of position to open/increase
-    /// uint256 collateral amount of collateral token or pay token
     /// bytes extradata some extradata past to hooks, data format described in hook
     function _createIncreasePositionOrder(
         DataTypes.Side _side,
@@ -461,12 +466,10 @@ contract OrderManager is
         address _fromToken,
         address _toToken,
         uint256 _amountIn,
-        uint256 _minAmountOut,
-        address _receiver,
         address _beneficier
     ) internal returns (uint256 amountOut) {
         IERC20(_fromToken).safeTransfer(address(pool), _amountIn);
-        return _doSwap(_fromToken, _toToken, _minAmountOut, _receiver, _beneficier);
+        return _doSwap(_fromToken, _toToken, 0, address(this), _beneficier);
     }
 
     function _doSwap(

@@ -15,7 +15,7 @@ contract OracleTest is Test {
 
     function setUp() external {
         vm.startPrank(owner);
-        oracle = new Oracle();
+        oracle = new Oracle(address(bytes20("seq-up-time")));
         token = address(new MockERC20("token", "tk", 18));
         sequence = address(oracle.sequencerUptimeFeed());
         oracle.configToken(token, 18, chainlink, 8, 3600, 500);

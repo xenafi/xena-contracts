@@ -424,7 +424,7 @@ contract Pool is
     }
 
     function liquidatePosition(address _account, address _indexToken, address _collateralToken, DataTypes.Side _side)
-        external
+        external nonReentrant
     {
         _requireValidTokenPair(_indexToken, _collateralToken, _side, false);
         uint256 borrowIndex = accrueInterest(_collateralToken);
@@ -621,7 +621,7 @@ contract Pool is
         uint256 total;
         for (uint256 i = 0; i < nTokens; ++i) {
             TokenWeight memory item = tokens[i];
-            assert(isAsset[item.token]);
+            require(isAsset[item.token]);
             // unlisted token always has zero weight
             uint256 weight = isListed[item.token] ? item.weight : 0;
             targetWeights[item.token] = weight;

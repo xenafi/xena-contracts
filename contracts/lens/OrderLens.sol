@@ -9,7 +9,7 @@ import {Constants} from "../lib/Constants.sol";
 
 contract OrderLens {
     address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address constant WETH = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    address immutable WETH;
 
     struct LeverageOrderView {
         uint256 id;
@@ -37,11 +37,14 @@ contract OrderLens {
     IOrderManagerWithStorage public immutable orderManager;
     IPoolWithStorage public immutable pool;
 
-    constructor(address _orderManager, address _pool) {
+    constructor(address _orderManager, address _pool, address _WETH) {
         require(_orderManager != address(0), "invalid address");
         require(_pool != address(0), "invalid address");
+        require(_WETH != address(0), "invalid address");
+
         orderManager = IOrderManagerWithStorage(_orderManager);
         pool = IPoolWithStorage(_pool);
+        WETH = _WETH;
     }
 
     function getOpenLeverageOrders(address _owner, uint256 _skip, uint256 _take, uint256 _head)

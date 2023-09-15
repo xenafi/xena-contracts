@@ -12,13 +12,15 @@ contract LiquidityRouter {
     using SafeERC20 for IERC20;
     using SafeERC20 for IWETH;
 
-    IWETH public constant weth = IWETH(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
+    IWETH public immutable weth;
     IPool public immutable pool;
 
-    constructor(address _pool) {
+    constructor(address _pool, address _weth) {
         require(_pool != address(0), "zeroAddress");
+        require(_weth != address(0), "zeroAddress");
 
         pool = IPool(_pool);
+        weth = IWETH(_weth);
     }
 
     function addLiquidityETH(address _tranche, uint256 _minLpAmount, address _to) external payable {

@@ -30,12 +30,11 @@ contract Oracle is Ownable, IOracle {
     uint256 public constant PRICE_FEED_ERROR_SPREAD = 5e4; // 5%
     uint256 public constant PRICE_FEED_INACTIVE_SPREAD = 2e3; // 0.2%
     uint256 public constant MAX_DEVIATION = 1e5; // 10%
-    uint256 public constant MAX_CHAINLINK_TIMEOUT = 1 days; // 10%
+    uint256 public constant MAX_CHAINLINK_TIMEOUT = 1 days;
     /// @notice time to wait after sequencer back online
-    uint256 public constant SEQUENCER_GRACE_PERIOD_TIME = 1 hours; // 10%
+    uint256 public constant SEQUENCER_GRACE_PERIOD_TIME = 1 hours;
     /// @notice arbitrum sequence uptime feed
-    AggregatorV3Interface public constant sequencerUptimeFeed =
-        AggregatorV3Interface(0xFdB631F5EE196F0ed6FAa767959853A9F217697D);
+    AggregatorV3Interface public immutable sequencerUptimeFeed;
 
     uint256 public constant MAX_PRICE_POST_DELAY = 60;
 
@@ -49,6 +48,12 @@ contract Oracle is Ownable, IOracle {
 
     mapping(address => bool) public isReporter;
     address[] public reporters;
+
+    constructor(address _sequencerUptimeFeed) {
+        if (_sequencerUptimeFeed == address(0)) revert InvalidAddress();
+
+        sequencerUptimeFeed = AggregatorV3Interface(_sequencerUptimeFeed);
+    }
 
     // ============ Mutative functions ============
 
@@ -133,6 +138,7 @@ contract Oracle is Ownable, IOracle {
     }
 
     function addReporter(address reporter) external onlyOwner {
+        if (reporter == address(0)) revert InvalidAddress();
         if (isReporter[reporter]) revert ReporterExists();
 
         isReporter[reporter] = true;
@@ -141,7 +147,6 @@ contract Oracle is Ownable, IOracle {
     }
 
     function removeReporter(address reporter) external onlyOwner {
-        if (reporter == address(0)) revert InvalidAddress();
         if (!isReporter[reporter]) revert NotAReporter();
 
         isReporter[reporter] = false;

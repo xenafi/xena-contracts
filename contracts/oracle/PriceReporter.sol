@@ -45,7 +45,7 @@ contract PriceReporter is Ownable {
             }
         }
 
-        for (uint256 i = 0; i < swapOrders.length; i++) {
+        for (uint256 i = 0; i < swapOrders.length;) {
             try orderManager.executeSwapOrder(swapOrders[i], payable(msg.sender)) {} catch {}
             unchecked {
                 ++i;
@@ -59,6 +59,7 @@ contract PriceReporter is Ownable {
 
         isReporter[reporter] = true;
         reporters.push(reporter);
+        emit ReporterAdded(reporter);
     }
 
     function removeReporter(address reporter) external onlyOwner {
@@ -72,7 +73,11 @@ contract PriceReporter is Ownable {
             }
         }
         reporters.pop();
+        emit ReporterRemoved(reporter);
     }
+
+    event ReporterAdded(address indexed);
+    event ReporterRemoved(address indexed);
 
     error Unauthorized();
     error InvalidAddress();
